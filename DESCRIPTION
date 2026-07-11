@@ -1,0 +1,31 @@
+Package: simtte
+Title: Simulate Time-to-Event Data Using Weibull and Spline Models
+Version: 1.0.1
+Language: en-US
+Authors@R: person("Carlos", "Traynor", email = "carlos.traynor.qcp@gmail.com",
+    role = c("aut", "cre"))
+Description: Simulates time-to-event (survival) datasets for clinical trial
+    design and analysis. Supports Weibull and flexible M-spline baseline
+    hazard models via the 'mrgsolve' ordinary differential equation solver
+    backend. Implements inverse transform sampling from cumulative hazard
+    functions to generate event times. See Bender et al. (2005)
+    <doi:10.1002/sim.2059> for the inverse transform sampling methodology
+    and Royston and Parmar (2002) <doi:10.1002/sim.1203> for flexible
+    parametric survival models.
+License: GPL (>= 2)
+Encoding: UTF-8
+LazyData: true
+Depends: R (>= 4.0.0)
+Imports: dplyr, magrittr, mrgsolve
+Suggests: testthat (>= 3.0.0), knitr, rmarkdown
+VignetteBuilder: knitr
+URL: https://github.com/csetraynor/simtte
+BugReports: https://github.com/csetraynor/simtte/issues
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
+NeedsCompilation: no
+Packaged: 2026-07-04 07:50:04 UTC; carlostraynor
+Author: Carlos Traynor [aut, cre]
+Maintainer: Carlos Traynor <carlos.traynor.qcp@gmail.com>
+Repository: CRAN
+Date/Publication: 2026-07-11 07:50:02 UTC
