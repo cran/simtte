@@ -31,9 +31,17 @@ library(simtte)
 #   geom_hline(yintercept = 0, linetype = 2) +
 #   theme_bw()
 
-## ----custom, eval = FALSE-----------------------------------------------------
-# # Assume 'mrg_output' is the output of an mrgsim() call with a 'p11' column
-# # result <- sim_tte_df(mrg_output, surv_var = "p11", id_var = "ID")
+## ----custom-------------------------------------------------------------------
+# Example with a mock survival data frame (no mrgsolve needed)
+set.seed(123)
+mrg_output <- data.frame(
+  ID = rep(1:5, each = 100),
+  time = rep(seq(0.1, 10, length.out = 100), 5),
+  p11 = rep(exp(-0.3 * seq(0.1, 10, length.out = 100)), 5)
+)
+result <- sim_tte_df(mrg_output, surv_var = "p11", id_var = "ID",
+  time_var = "time")
+head(result)
 
 ## ----arms, eval = FALSE-------------------------------------------------------
 # set.seed(42)

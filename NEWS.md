@@ -1,3 +1,17 @@
+# simtte 1.0.2
+
+* Fixed time-column position bug in `sim_tte_df()`: time is now resolved by
+  column name, not position.
+* Preserved original subject IDs in output (no longer renumbered).
+* Corrected `.get_tte()` to use the conventional `<= U` inverse-transform
+  boundary rule.
+* Added optional `time_var` argument to `sim_tte_df()`.
+* Changed package Title to "Simulate Bespoke Time-to-Event Models Using
+  ODEs" and rewrote the Description to frame **simtte** around bespoke
+  ODE-based time-to-event models (built-in Weibull/M-spline hazards plus
+  fully custom `mrgsolve` ODE systems), rather than Weibull and spline
+  models specifically.
+
 # simtte 1.0.1
 
 * Fixed issues from CRAN review:

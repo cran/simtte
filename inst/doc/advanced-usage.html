@@ -376,8 +376,24 @@ at a given quantile.</p>
 <p>If you have a custom mrgsolve model that outputs a survival
 probability column, you can use <code>sim_tte_df()</code> directly to
 perform inverse transform sampling on the output:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Assume &#39;mrg_output&#39; is the output of an mrgsim() call with a &#39;p11&#39; column</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co"># result &lt;- sim_tte_df(mrg_output, surv_var = &quot;p11&quot;, id_var = &quot;ID&quot;)</span></span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Example with a mock survival data frame (no mrgsolve needed)</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>mrg_output <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">ID =</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>, <span class="at">each =</span> <span class="dv">100</span>),</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">time =</span> <span class="fu">rep</span>(<span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="dv">10</span>, <span class="at">length.out =</span> <span class="dv">100</span>), <span class="dv">5</span>),</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="at">p11 =</span> <span class="fu">rep</span>(<span class="fu">exp</span>(<span class="sc">-</span><span class="fl">0.3</span> <span class="sc">*</span> <span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="dv">10</span>, <span class="at">length.out =</span> <span class="dv">100</span>)), <span class="dv">5</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>result <span class="ot">&lt;-</span> <span class="fu">sim_tte_df</span>(mrg_output, <span class="at">surv_var =</span> <span class="st">&quot;p11&quot;</span>, <span class="at">id_var =</span> <span class="st">&quot;ID&quot;</span>,</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  <span class="at">time_var =</span> <span class="st">&quot;time&quot;</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="fu">head</span>(result)</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; # A tibble: 5 × 3</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt;   sim_time sim_status    ID</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt;      &lt;dbl&gt;      &lt;dbl&gt; &lt;int&gt;</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt; 1      4.2          1     1</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt; 2      0.8          1     2</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt; 3      3            1     3</span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; 4      0.5          1     4</span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; 5      0.3          1     5</span></span></code></pre></div>
 </div>
 <div id="multiple-treatment-arms" class="section level2">
 <h2>Multiple Treatment Arms</h2>
