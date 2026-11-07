@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Bring Your Own PK/PD Model</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Bring Your Own PK/PD Model</h1>
+
+
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(simtte)</span></code></pre></div>
+<p><code>sim_tte_ode()</code>’s six built-in PK/PD models
+(<code>vignette(&quot;pkpd-time-to-event&quot;)</code>) cover common structures;
+<code>tte_model()</code> converts <em>any</em> <code>mrgsolve</code>
+model with an <code>$ODE</code>/<code>$DES</code> block into one usable
+the same way. This vignette covers the conversion mechanics, how it
+interacts with a model’s own between-subject variability, the boundary
+between a covariate effect and a model parameter, and the
+compile-cost/caching trade-off.</p>
+<div id="a-minimal-conversion" class="section level2">
+<h2>1. A minimal conversion</h2>
+<p>Here is a complete, short model – one-compartment PK with first-order
+absorption – with no survival scaffolding of its own:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>my_model <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="st">$PARAM CL = 1, V = 20, KA = 1</span></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="st">$CMT DEPOT CENT</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="st">$ODE</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="st">dxdt_DEPOT = -KA*DEPOT;</span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="st">dxdt_CENT = KA*DEPOT - (CL/V)*CENT;</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="st">$CAPTURE CL KA</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="st">&quot;</span></span></code></pre></div>
+<p>Convert it, naming the hazard as a plain C++ expression in terms of
+the model’s own quantities (<code>CENT</code>, <code>V</code>) and new
+hazard parameters (<code>H0</code>, <code>beta</code>):</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>tm <span class="ot">&lt;-</span> <span class="fu">tte_model</span>(my_model, <span class="at">hazard =</span> <span class="st">&quot;H0 * exp(lp + beta * (CENT/V))&quot;</span>,</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="at">params =</span> <span class="fu">list</span>(<span class="at">H0 =</span> <span class="fl">0.01</span>, <span class="at">beta =</span> <span class="fl">0.05</span>))</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; Building simtte_tte_model_61f3815d2ede ... done.</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>tm</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt; &lt;simtte_model&gt; &quot;simtte_tte_model_61f3815d2ede&quot; (source: code)</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt;  hazard: HAZ = H0 * exp(lp + beta * (CENT/V)) </span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt;  parameters:</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;    H0 = 0.01 </span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt;    beta = 0.05 </span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt;    lp = 0 </span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt;    U = 0 </span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;    </span><span class="re">END</span><span class="co"> = 1e+09 </span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt;  between-subject variability: none configured</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt;  $code: 59 lines -- cat(x$code, sep = &quot;\n&quot;) to view</span></span></code></pre></div>
+<p><code>tm$code</code> is the full converted model, ready to
+inspect:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">cat</span>(tm<span class="sc">$</span>code, <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt; $PARAM CL = 1, V = 20, KA = 1</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; $CMT DEPOT CENT</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; $ODE</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; dxdt_DEPOT = -KA*DEPOT;</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; dxdt_CENT = KA*DEPOT - (CL/V)*CENT;</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; $CAPTURE CL KA</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; $GLOBAL</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt;   // -- </span><span class="re">BEGIN</span><span class="co"> simtte survival scaffolding (tte_model()) ----</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="co">#&gt;   static int    event_found = 0;</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="co">#&gt;   static double TEVT        = 0.0;</span></span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="co">#&gt;   static double T_PRE       = 0.0;</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co">#&gt;   static double P_PRE       = 1.0;</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a><span class="co">#&gt;   static double P_POST      = 0.0;</span></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt;   // HAZ is declared here (not as an $ODE-local) so that a</span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt;   // brand-new, separate $ODE block can still assign it and</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co">#&gt;   // have $CAPTURE see it -- mrgsolve&#39;s autodec only hoists</span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co">#&gt;   // an $ODE-local into shared storage when it is declared</span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co">#&gt;   // in the SAME $ODE occurrence as the rest of the model&#39;s</span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="co">#&gt;   // own equations, verified directly not to happen across</span></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="co">#&gt;   // two separate $ODE (or $ODE + $DES) occurrences (see</span></span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co">#&gt;   // reports/experiments/10_two_ode_blocks_capture_test.R).</span></span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="co">#&gt;   static double HAZ         = 0.0;</span></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a><span class="co">#&gt;   // -- </span><span class="re">END</span><span class="co"> simtte survival scaffolding --------------------</span></span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="co">#&gt; $MAIN</span></span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a><span class="co">#&gt;   // -- </span><span class="re">BEGIN</span><span class="co"> simtte survival scaffolding (tte_model()) ----</span></span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a><span class="co">#&gt;   if (NEWIND &lt;= 1) {</span></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a><span class="co">#&gt;     event_found = 0;</span></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co">#&gt;     TEVT = 0.0;</span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a><span class="co">#&gt;     T_PRE = 0.0;</span></span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a><span class="co">#&gt;     P_PRE = 1.0;</span></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a><span class="co">#&gt;     P_POST = 0.0;</span></span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a><span class="co">#&gt;   }</span></span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a><span class="co">#&gt;   // -- </span><span class="re">END</span><span class="co"> simtte survival scaffolding --------------------</span></span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co">#&gt; $ODE</span></span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a><span class="co">#&gt;   // -- </span><span class="re">BEGIN</span><span class="co"> simtte survival scaffolding (tte_model()) ----</span></span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="co">#&gt;   HAZ = H0 * exp(lp + beta * (CENT/V));</span></span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="co">#&gt;   dxdt_p11 = -p11 * HAZ;</span></span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a><span class="co">#&gt;   if (!event_found &amp;&amp; p11 &gt; U &amp;&amp; SOLVERTIME &lt;= </span><span class="re">END</span><span class="co"> &amp;&amp; SOLVERTIME &gt;= T_PRE) {</span></span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a><span class="co">#&gt;     T_PRE = SOLVERTIME;</span></span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a><span class="co">#&gt;     P_PRE = p11;</span></span>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a><span class="co">#&gt;   }</span></span>
+<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a><span class="co">#&gt;   if (!event_found &amp;&amp; p11 &lt;= U &amp;&amp; SOLVERTIME &lt;= </span><span class="re">END</span><span class="co">) {</span></span>
+<span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a><span class="co">#&gt;     event_found = 1;</span></span>
+<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a><span class="co">#&gt;     TEVT = SOLVERTIME;</span></span>
+<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a><span class="co">#&gt;     P_POST = p11;</span></span>
+<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a><span class="co">#&gt;   }</span></span>
+<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a><span class="co">#&gt;   // -- </span><span class="re">END</span><span class="co"> simtte survival scaffolding --------------------</span></span>
+<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a><span class="co">#&gt; $PARAM H0 = 0.01, beta = 0.05, lp = 0, U = 0, </span><span class="re">END</span><span class="co"> = 1000000000</span></span>
+<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-56"><a href="#cb4-56" tabindex="-1"></a><span class="co">#&gt; $INIT</span></span>
+<span id="cb4-57"><a href="#cb4-57" tabindex="-1"></a><span class="co">#&gt;   p11 = 1</span></span>
+<span id="cb4-58"><a href="#cb4-58" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb4-59"><a href="#cb4-59" tabindex="-1"></a><span class="co">#&gt; $CAPTURE</span></span>
+<span id="cb4-60"><a href="#cb4-60" tabindex="-1"></a><span class="co">#&gt;   TEVT event_found T_PRE P_PRE P_POST HAZ</span></span></code></pre></div>
+<p>Pass <code>tm</code> to <code>sim_tte_ode()</code> exactly like a
+built-in model name:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>dose <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">ID =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">30</span>, <span class="at">time =</span> <span class="dv">0</span>, <span class="at">cmt =</span> <span class="dv">1</span>, <span class="at">amt =</span> <span class="dv">100</span>, <span class="at">evid =</span> <span class="dv">1</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>sim_tm <span class="ot">&lt;-</span> <span class="fu">sim_tte_ode</span>(<span class="at">model =</span> tm, <span class="at">n =</span> <span class="dv">30</span>, <span class="at">end =</span> <span class="dv">20</span>, <span class="at">delta =</span> <span class="dv">2</span>, <span class="at">data =</span> dose,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">1</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">head</span>(sim_tm<span class="sc">$</span>events)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt;   ID  sim_time sim_status     sim_reason</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; 1  1 20.000000          0 administrative</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt; 2  2 20.000000          0 administrative</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; 3  3 20.000000          0 administrative</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; 4  4  8.003627          1          event</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; 5  5 20.000000          0 administrative</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; 6  6  8.918469          1          event</span></span></code></pre></div>
+<p>A bare compiled <code>mrgsolve</code> model (not wrapped by
+<code>tte_model()</code>) is not accepted directly by
+<code>sim_tte_ode()</code> – convert it first. This keeps there to
+exactly one way to bring a model in.</p>
+</div>
+<div id="what-conversion-actually-does" class="section level2">
+<h2>2. What conversion actually does</h2>
+<p><code>tte_model()</code> writes the same survival scaffold every
+built-in <code>*_hazard</code> model already has – a <code>p11</code>
+compartment with <code>dxdt_p11 = -p11 * HAZ</code>, a per-subject
+uniform draw <code>U</code>, an administrative horizon <code>END</code>,
+and the in-solver latch that records the first crossing time – onto your
+model, mechanically:</p>
+<ol style="list-style-type: decimal">
+<li>Your model’s own <code>$ODE</code>/<code>$DES</code> content is
+required (a <code>$PKMODEL</code>/<code>$PRED</code>-only model is
+rejected, since the survival compartment must be co-integrated in the
+same ODE system; use an ODE-form <code>mrgsolve::modlib()</code>
+equivalent instead, e.g. <code>&quot;pk2cmt&quot;</code> not
+<code>&quot;pk2&quot;</code>).</li>
+<li><code>lp</code>, <code>U</code>, and <code>END</code> are added as
+new <code>$PARAM</code> entries (defaults 0, 0, 1e9) – always, whether
+or not your <code>hazard</code> expression uses <code>lp</code>. Include
+<code>lp</code> in <code>hazard</code> if <code>sim_tte_ode()</code>’s
+<code>covariates</code>/<code>beta</code>/<code>formula</code> mechanism
+should affect this model.</li>
+<li>Your <code>hazard</code> expression becomes <code>HAZ</code>,
+computed inside a brand-new <code>$ODE</code> block appended after your
+model’s own – your model’s own <code>$ODE</code>/<code>$DES</code>
+content is never edited.</li>
+<li><code>p11 = 1</code> is added as a new <code>$INIT</code> entry, and
+<code>p11</code> as a new compartment.</li>
+<li>The event-detection latch (<code>TEVT</code>,
+<code>event_found</code>, and the bracket columns
+<code>T_PRE</code>/<code>P_PRE</code>/<code>P_POST</code> that
+<code>sim_tte_ode()</code>’s refinement step reads) is added to
+<code>$GLOBAL</code>/<code>$MAIN</code> – the only two blocks edited in
+place, since <code>mrgsolve</code> allows only one of each.</li>
+<li>New <code>$CAPTURE</code> entries expose the scaffold’s own
+columns.</li>
+<li>A reserved-name collision check runs before compiling: your model
+must not already declare <code>p11</code>, <code>U</code>,
+<code>END</code>, <code>HAZ</code>, <code>TEVT</code>,
+<code>event_found</code>, <code>T_PRE</code>, <code>P_PRE</code>,
+<code>P_POST</code>, or <code>lp</code> for anything else.</li>
+<li>The result compiles via <code>mrgsolve::mcode_cache()</code> into a
+<code>&quot;simtte_model&quot;</code> object, ready for
+<code>sim_tte_ode(model = ...)</code>.</li>
+</ol>
+<p>Verified to reproduce all six built-in hazard models exactly when
+converting their own <code>mrgsolve::modlib()</code> backbones
+directly.</p>
+</div>
+<div id="omega-coexistence" class="section level2">
+<h2>3. <code>$OMEGA</code> coexistence</h2>
+<p>If your own model already declares its own <code>$OMEGA</code> block
+(the classic <code>TVCL</code>/<code>ETA()</code> idiom),
+<code>tte_model()</code> leaves it untouched and
+<code>sim_tte_ode()</code>’s <code>omega</code> argument goes through it
+directly instead of the <code>idata</code> route
+<code>vignette(&quot;pkpd-time-to-event&quot;)</code> shows for the built-in
+models:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>my_model_omega <span class="ot">&lt;-</span> <span class="st">&quot;</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="st">$PARAM TVCL = 1, TVV = 20, KA = 1</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="st">$OMEGA @labels ETA_CL ETA_V</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="st">0 0</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="st">$CMT DEPOT CENT</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="st">$MAIN</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="st">double CL = TVCL*exp(ETA_CL);</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="st">double V  = TVV*exp(ETA_V);</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="st">$ODE</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="st">dxdt_DEPOT = -KA*DEPOT;</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="st">dxdt_CENT = KA*DEPOT - (CL/V)*CENT;</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="st">&quot;</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>tm_omega <span class="ot">&lt;-</span> <span class="fu">tte_model</span>(my_model_omega,</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  <span class="at">hazard =</span> <span class="st">&quot;H0 * exp(lp + beta * (CENT/V))&quot;</span>,</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>  <span class="at">params =</span> <span class="fu">list</span>(<span class="at">H0 =</span> <span class="fl">0.01</span>, <span class="at">beta =</span> <span class="fl">0.05</span>))</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt; Building simtte_tte_model_cc72360c2f85 ... done.</span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>sim_tm_omega <span class="ot">&lt;-</span> <span class="fu">sim_tte_ode</span>(<span class="at">model =</span> tm_omega, <span class="at">omega =</span> <span class="fu">diag</span>(<span class="fu">c</span>(<span class="fl">0.09</span>, <span class="fl">0.16</span>)),</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  <span class="at">n =</span> <span class="dv">30</span>, <span class="at">data =</span> dose, <span class="at">end =</span> <span class="dv">20</span>, <span class="at">delta =</span> <span class="dv">2</span>, <span class="at">seed =</span> <span class="dv">1</span>)</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="fu">head</span>(sim_tm_omega<span class="sc">$</span>events)</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt;   ID  sim_time sim_status     sim_reason</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; 1  1 20.000000          0 administrative</span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; 2  2 20.000000          0 administrative</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt; 3  3 20.000000          0 administrative</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt; 4  4  7.101013          1          event</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; 5  5 20.000000          0 administrative</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; 6  6  9.650633          1          event</span></span></code></pre></div>
+<p><code>tte_model()</code>’s own <code>bsv_targets</code> argument is
+the alternative, for a model with <em>no</em> declared
+<code>$OMEGA</code> block: it names which of the model’s structural
+parameters <code>sim_tte_ode()</code>’s <code>omega</code> may target
+via the <code>idata</code> route instead, exactly like the built-in
+PK/PD models. Supplying <code>bsv_targets</code> for a model that
+already declares <code>$OMEGA</code> is ignored (with a
+<code>message()</code>) – the two routes never combine for the same
+model.</p>
+</div>
+<div id="the-lphazard-boundary" class="section level2">
+<h2>4. The <code>lp</code>/hazard boundary</h2>
+<p>A covariate’s effect (<code>sim_tte_ode()</code>’s
+<code>covariates</code>/<code>beta</code>/<code>formula</code>) must be
+linear in <code>beta</code>; a link that is nonlinear in a
+<em>parameter</em> you want to estimate or vary belongs directly in
+<code>hazard</code> instead, composed with whatever PK/PD state, BSV
+draw, or dosing your model already provides:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>tm_emax <span class="ot">&lt;-</span> <span class="fu">tte_model</span>(my_model, <span class="at">hazard =</span> <span class="st">&quot;H0 * (CENT / (EC50 + CENT))&quot;</span>,</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="at">params =</span> <span class="fu">list</span>(<span class="at">H0 =</span> <span class="fl">0.01</span>, <span class="at">EC50 =</span> <span class="dv">5</span>))</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; Building simtte_tte_model_fc381db0bb37 ... done.</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>sim_emax <span class="ot">&lt;-</span> <span class="fu">sim_tte_ode</span>(<span class="at">model =</span> tm_emax, <span class="at">n =</span> <span class="dv">30</span>, <span class="at">end =</span> <span class="dv">20</span>, <span class="at">delta =</span> <span class="dv">2</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">data =</span> dose, <span class="at">seed =</span> <span class="dv">1</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="fu">head</span>(sim_emax<span class="sc">$</span>events)</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt;   ID sim_time sim_status     sim_reason</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt; 1  1 20.00000          0 administrative</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; 2  2 20.00000          0 administrative</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; 3  3 20.00000          0 administrative</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; 4  4 10.38735          1          event</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="co">#&gt; 5  5 20.00000          0 administrative</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co">#&gt; 6  6 11.56369          1          event</span></span></code></pre></div>
+<p>Here <code>EC50</code> is a <code>param</code> you can override or,
+in a future variation, sample per subject via <code>idata</code> –
+something a covariate column can never do, since a covariate’s effect
+only ever multiplies a fixed column by a coefficient. See
+<code>vignette(&quot;pkpd-time-to-event&quot;)</code> section 3 for the same
+boundary from the covariate side, including a demonstration that a
+<em>fixed</em> <code>EC50</code> gives identical results whichever way
+it is written.</p>
+</div>
+<div id="compile-cost-and-caching" class="section level2">
+<h2>5. Compile cost and caching</h2>
+<p>Every <code>tte_model()</code> conversion is a real C++ compile (a
+few seconds). <code>mrgsolve::mcode_cache()</code> (used internally)
+skips recompiling an unchanged, previously-seen model within the same
+session. To make that survive across R sessions too (worthwhile if you
+reconvert the same model many times, e.g. a simulation study script
+re-run repeatedly), set
+<code>options(simtte.cache_dir = tools::R_user_dir(&quot;simtte&quot;, &quot;cache&quot;))</code>
+– see <code>?simtte_model_cache</code> for the persistence/versioning
+details, and <code>?simtte_model_cache_clear</code> to remove what
+accumulates there (e.g. after an R/simtte/mrgsolve upgrade); avoid
+pointing <code>mrgsolve</code>’s own
+<code>mrgsolve.project</code>/<code>mrgsolve.soloc</code> options at a
+shared directory yourself (see the next paragraph for why). One caveat
+either way: a caller-supplied <code>name</code> reused for genuinely
+different <code>hazard</code>/<code>params</code> content, called back
+to back, can in principle collide within the same build directory (leave
+<code>name</code> at its default, which avoids this by construction,
+since it is derived from a hash of the converted code).</p>
+<p><strong>Parallel workflow</strong>: don’t have each worker
+convert/compile the model independently, and don’t point every worker’s
+<code>mrgsolve.soloc</code> at one shared directory hoping for a
+cross-worker cache hit – measured directly: multiple workers compiling
+the <em>same</em> not-yet-built model into a shared directory at the
+same moment fails intermittently, and even after it is fully built, a
+worker <em>re-compiling</em> it against that shared directory a second
+time still can. Convert the model once (in the parent, or however many
+times you like sequentially), call <code>simtte_prepare_model()</code>
+on the result, and broadcast <em>that</em> to every worker – see
+<code>?sim_tte_ode</code> “Parallel simulation” for the full pattern. A
+worker that only ever calls <code>loadso()</code> on an already-compiled
+object cannot race with anything.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

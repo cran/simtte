@@ -395,28 +395,83 @@ perform inverse transform sampling on the output:</p>
 <span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co">#&gt; 4      0.5          1     4</span></span>
 <span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="co">#&gt; 5      0.3          1     5</span></span></code></pre></div>
 </div>
+<div id="event-time-interpolation" class="section level2">
+<h2>Event-Time Interpolation</h2>
+<p><code>sim_tte_df()</code> accepts an <code>event_time_method</code>
+argument. <code>&quot;grid&quot;</code> (the default, used above) resolves the
+event time as the first reported time at which survival falls to or
+below the sampled uniform draw. Setting
+<code>event_time_method = &quot;log_survival&quot;</code> instead refines a
+crossing that falls strictly between two reported points, by linearly
+interpolating cumulative hazard <span class="math inline">\(H(t) = -\log
+S(t)\)</span> between them and solving for the time at which <span class="math inline">\(H(t)\)</span> equals the target implied by the
+draw. Linear interpolation in <span class="math inline">\(H\)</span> is
+equivalent to assuming the hazard is constant between the two reported
+points surrounding the crossing (a piecewise-constant hazard over that
+interval) — it is model-agnostic and does not re-derive or re-fit
+whatever hazard actually generated the trajectory.</p>
+<p>Reusing the same mock trajectory, with the same seed so both calls
+draw identical uniform random variates per subject:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>result_grid <span class="ot">&lt;-</span> <span class="fu">sim_tte_df</span>(mrg_output, <span class="at">event_time_method =</span> <span class="st">&quot;grid&quot;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">7</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>result_interp <span class="ot">&lt;-</span> <span class="fu">sim_tte_df</span>(mrg_output, <span class="at">event_time_method =</span> <span class="st">&quot;log_survival&quot;</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co"># Event/censoring classification is identical for the same trajectory</span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co"># and the same random draws -- interpolation only refines *where*</span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co"># within an already-identified interval the event falls.</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="fu">identical</span>(result_grid<span class="sc">$</span>sim_status, result_interp<span class="sc">$</span>sim_status)</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="fu">cbind</span>(</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="at">ID           =</span> result_grid<span class="sc">$</span>ID,</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  <span class="at">status       =</span> result_grid<span class="sc">$</span>sim_status,</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  <span class="at">grid         =</span> result_grid<span class="sc">$</span>sim_time,</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>  <span class="at">log_survival =</span> result_interp<span class="sc">$</span>sim_time</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>)</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="co">#&gt;      ID status grid log_survival</span></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co">#&gt; [1,]  1      1  0.1     0.100000</span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="co">#&gt; [2,]  2      1  3.1     3.073143</span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a><span class="co">#&gt; [3,]  3      1  7.2     7.189246</span></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a><span class="co">#&gt; [4,]  4      1  8.9     8.876189</span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a><span class="co">#&gt; [5,]  5      1  4.8     4.705382</span></span></code></pre></div>
+<p>The two methods agree exactly whenever the crossing already lands on
+a reported time (for example, a first-observation crossing, or a draw
+that exactly matches a reported survival value);
+<code>log_survival</code> reports a slightly different time only when
+the true crossing fell strictly between two reported points. For this
+M-spline-independent mock trajectory the hazard varies continuously
+between reported points, so <code>log_survival</code> here is an
+approximation whose accuracy improves as the reported <code>time</code>
+grid is refined, not an exact recovery of a continuous-time event root.
+For <strong>simtte</strong>’s built-in M-spline model, whose reported
+hazard is genuinely piecewise-constant between grid points,
+<code>log_survival</code> recovers the event time implied by that
+discretized hazard exactly.</p>
+</div>
 <div id="multiple-treatment-arms" class="section level2">
 <h2>Multiple Treatment Arms</h2>
 <p>You can simulate different treatment arms by specifying different
 prognostic indices:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>n_per_arm <span class="ot">&lt;-</span> <span class="dv">50</span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>times <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="dv">50</span>, <span class="at">by =</span> <span class="fl">0.1</span>)</span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co"># Control arm</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>lp_ctrl <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rep</span>(<span class="dv">0</span>, n_per_arm), <span class="at">nrow =</span> n_per_arm)</span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>ctrl <span class="ot">&lt;-</span> <span class="fu">sim_tte</span>(<span class="at">pi =</span> lp_ctrl, <span class="at">mu =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">coefs =</span> <span class="fl">1.1</span>,</span>
-<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="at">time =</span> times, <span class="at">type =</span> <span class="st">&quot;weibull&quot;</span>, <span class="at">end_time =</span> <span class="dv">50</span>)</span>
-<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>ctrl<span class="sc">$</span>arm <span class="ot">&lt;-</span> <span class="st">&quot;Control&quot;</span></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a></span>
-<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co"># Treatment arm (lower hazard)</span></span>
-<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>lp_trt <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rep</span>(<span class="sc">-</span><span class="fl">0.5</span>, n_per_arm), <span class="at">nrow =</span> n_per_arm)</span>
-<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>trt <span class="ot">&lt;-</span> <span class="fu">sim_tte</span>(<span class="at">pi =</span> lp_trt, <span class="at">mu =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">coefs =</span> <span class="fl">1.1</span>,</span>
-<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  <span class="at">time =</span> times, <span class="at">type =</span> <span class="st">&quot;weibull&quot;</span>, <span class="at">end_time =</span> <span class="dv">50</span>)</span>
-<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>trt<span class="sc">$</span>arm <span class="ot">&lt;-</span> <span class="st">&quot;Treatment&quot;</span></span>
-<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a></span>
-<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>combined <span class="ot">&lt;-</span> <span class="fu">rbind</span>(ctrl, trt)</span>
-<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a><span class="fu">head</span>(combined)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>n_per_arm <span class="ot">&lt;-</span> <span class="dv">50</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>times <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="dv">50</span>, <span class="at">by =</span> <span class="fl">0.1</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co"># Control arm</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>lp_ctrl <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rep</span>(<span class="dv">0</span>, n_per_arm), <span class="at">nrow =</span> n_per_arm)</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>ctrl <span class="ot">&lt;-</span> <span class="fu">sim_tte</span>(<span class="at">pi =</span> lp_ctrl, <span class="at">mu =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">coefs =</span> <span class="fl">1.1</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="at">time =</span> times, <span class="at">type =</span> <span class="st">&quot;weibull&quot;</span>, <span class="at">end_time =</span> <span class="dv">50</span>)</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>ctrl<span class="sc">$</span>arm <span class="ot">&lt;-</span> <span class="st">&quot;Control&quot;</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co"># Treatment arm (lower hazard)</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>lp_trt <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rep</span>(<span class="sc">-</span><span class="fl">0.5</span>, n_per_arm), <span class="at">nrow =</span> n_per_arm)</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>trt <span class="ot">&lt;-</span> <span class="fu">sim_tte</span>(<span class="at">pi =</span> lp_trt, <span class="at">mu =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">coefs =</span> <span class="fl">1.1</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  <span class="at">time =</span> times, <span class="at">type =</span> <span class="st">&quot;weibull&quot;</span>, <span class="at">end_time =</span> <span class="dv">50</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>trt<span class="sc">$</span>arm <span class="ot">&lt;-</span> <span class="st">&quot;Treatment&quot;</span></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>combined <span class="ot">&lt;-</span> <span class="fu">rbind</span>(ctrl, trt)</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="fu">head</span>(combined)</span></code></pre></div>
 </div>
 
 

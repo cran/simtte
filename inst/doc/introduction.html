@@ -363,22 +363,33 @@ sampling</strong> from the cumulative hazard function, computed via the
 <p><span class="math display">\[h(t) = \lambda \cdot \gamma \cdot
 t^{\gamma - 1}\]</span></p>
 <p>where <span class="math inline">\(\lambda = \exp(\mu +
-\mathbf{x}&#39;\boldsymbol{\beta})\)</span> is the scale and <span class="math inline">\(\gamma\)</span> is the shape parameter.</p>
+\mathbf{x}&#39;\boldsymbol{\beta})\)</span> is the scale and <span class="math inline">\(\gamma\)</span> is the shape parameter. The
+survival function <span class="math inline">\(S(t) =
+\exp(-\lambda t^\gamma)\)</span> has a closed form, so
+<strong>simtte</strong> evaluates it directly on the reported time grid
+rather than by numerically integrating the survival ODE; this is
+numerically robust across shape and parameter regimes.</p>
 </div>
 <div id="m-spline-model" class="section level3">
 <h3>M-Spline Model</h3>
 <p>For the flexible model, the baseline hazard is represented as a
 linear combination of M-spline basis functions, allowing complex hazard
-shapes.</p>
+shapes. The hazard value reported at a given time applies from that time
+until the next reported time (a last-observation-carried-forward
+convention), giving a piecewise-constant hazard on the reported
+grid.</p>
 </div>
 <div id="inverse-transform-sampling" class="section level3">
 <h3>Inverse Transform Sampling</h3>
-<p>Given a survival function <span class="math inline">\(S(t)\)</span>,
-we draw <span class="math inline">\(U \sim \text{Uniform}(0, 1)\)</span>
-and find the time <span class="math inline">\(t^*\)</span> such that
-<span class="math inline">\(S(t^*) = U\)</span>. The package solves the
-Kolmogorov forward equation numerically via <strong>mrgsolve</strong>
-and then applies this sampling scheme.</p>
+<p>Given a survival function <span class="math inline">\(S(t)\)</span>
+reported on the grid supplied via <code>time</code>, we draw <span class="math inline">\(U \sim \text{Uniform}(0, 1)\)</span> and find the
+first reported time <span class="math inline">\(t^*\)</span> such that
+<span class="math inline">\(S(t^*) \le U\)</span>
+(<code>event_time_method = &quot;grid&quot;</code>, the default). Setting
+<code>event_time_method = &quot;log_survival&quot;</code> instead refines a
+crossing that falls strictly between two reported points by linearly
+interpolating cumulative hazard between them; see “Event-Time
+Interpolation” below.</p>
 </div>
 </div>
 <div id="basic-workflow" class="section level2">
@@ -411,6 +422,37 @@ and then applies this sampling scheme.</p>
 <span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;ms&quot;</span></span>
 <span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>)</span>
 <span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="fu">head</span>(result)</span></code></pre></div>
+</div>
+<div id="event-time-interpolation" class="section level3">
+<h3>Event-Time Interpolation</h3>
+<p><code>event_time_method</code> defaults to <code>&quot;grid&quot;</code>, which
+preserves the original grid-based event-time resolution shown above.
+Setting it to <code>&quot;log_survival&quot;</code> refines a crossing that falls
+strictly between two reported time points; the underlying survival
+trajectory is unchanged, and so is event/censoring classification for
+the same seed:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>result_grid <span class="ot">&lt;-</span> <span class="fu">sim_tte</span>(</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">pi =</span> lp, <span class="at">mu =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">coefs =</span> <span class="fl">1.1</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">time =</span> <span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="dv">100</span>, <span class="at">by =</span> <span class="fl">0.1</span>),</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;weibull&quot;</span>, <span class="at">end_time =</span> <span class="dv">100</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>  <span class="at">event_time_method =</span> <span class="st">&quot;grid&quot;</span>           <span class="co"># default</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>)</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>result_interp <span class="ot">&lt;-</span> <span class="fu">sim_tte</span>(</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  <span class="at">pi =</span> lp, <span class="at">mu =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">coefs =</span> <span class="fl">1.1</span>,</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  <span class="at">time =</span> <span class="fu">seq</span>(<span class="fl">0.1</span>, <span class="dv">100</span>, <span class="at">by =</span> <span class="fl">0.1</span>),</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>  <span class="at">type =</span> <span class="st">&quot;weibull&quot;</span>, <span class="at">end_time =</span> <span class="dv">100</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>  <span class="at">event_time_method =</span> <span class="st">&quot;log_survival&quot;</span>   <span class="co"># sub-grid refinement</span></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>)</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="co"># Same seed and trajectory -&gt; identical event/censoring classification.</span></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a><span class="fu">identical</span>(result_grid<span class="sc">$</span>sim_status, result_interp<span class="sc">$</span>sim_status)</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="co"># sim_time can differ only where the crossing falls strictly between</span></span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="co"># two reported grid points.</span></span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">cbind</span>(<span class="at">grid =</span> result_grid<span class="sc">$</span>sim_time, <span class="at">log_survival =</span> result_interp<span class="sc">$</span>sim_time))</span></code></pre></div>
 </div>
 </div>
 <div id="output-structure" class="section level2">

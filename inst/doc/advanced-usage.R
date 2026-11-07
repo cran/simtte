@@ -43,6 +43,25 @@ result <- sim_tte_df(mrg_output, surv_var = "p11", id_var = "ID",
   time_var = "time")
 head(result)
 
+## ----log-survival-------------------------------------------------------------
+set.seed(7)
+result_grid <- sim_tte_df(mrg_output, event_time_method = "grid")
+
+set.seed(7)
+result_interp <- sim_tte_df(mrg_output, event_time_method = "log_survival")
+
+# Event/censoring classification is identical for the same trajectory
+# and the same random draws -- interpolation only refines *where*
+# within an already-identified interval the event falls.
+identical(result_grid$sim_status, result_interp$sim_status)
+
+cbind(
+  ID           = result_grid$ID,
+  status       = result_grid$sim_status,
+  grid         = result_grid$sim_time,
+  log_survival = result_interp$sim_time
+)
+
 ## ----arms, eval = FALSE-------------------------------------------------------
 # set.seed(42)
 # n_per_arm <- 50
